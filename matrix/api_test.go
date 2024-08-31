@@ -11,99 +11,98 @@ import (
 )
 
 func TestEcho(t *testing.T) {
-	req := httptest.NewRequest("POST", "/echo", nil)
+	tests := []struct {
+		name           string
+		input          string
+		expectedOutput string
+	}{
+		{"Non-Square Matrix", "1,2,3\n4,5,6\n", "error row count and col count not equal"},
+		{"Success", "1,2,3\n4,5,6\n7,8,9\n", "1,2,3\n4,5,6\n7,8,9"},
+	}
 
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-	part, _ := writer.CreateFormFile("file", "test.csv")
-	part.Write([]byte("1,2,3\n4,5,6\n7,8,9\n"))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, err := createTestRequest(tt.input)
+			if err != nil {
+				t.Fatalf("Failed to create mock CSV file: %v", err)
+			}
 
-	writer.Close()
-	req.Body = ioutil.NopCloser(body)
-	req.Header.Set("Content-Type", writer.FormDataContentType())
+			w := httptest.NewRecorder()
+			Echo(w, req)
 
-	w := httptest.NewRecorder()
-	Echo(w, req)
+			resp := w.Result()
+			bodyBytes, _ := ioutil.ReadAll(resp.Body)
+			bodyString := strings.TrimSpace(string(bodyBytes))
 
-	resp := w.Result()
-	bodyBytes, _ := ioutil.ReadAll(resp.Body)
-	bodyString := string(bodyBytes)
-
-	expected := "1,2,3\n4,5,6\n7,8,9\n"
-	if bodyString != expected {
-		t.Errorf("Expected %s, got %s", expected, bodyString)
+			if bodyString != tt.expectedOutput {
+				t.Errorf("Expected '%s', got '%s'", tt.expectedOutput, bodyString)
+			}
+		})
 	}
 }
 
 func TestFlatten(t *testing.T) {
-	req := httptest.NewRequest("POST", "/flatten", nil)
 
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-	part, _ := writer.CreateFormFile("file", "test.csv")
-	part.Write([]byte("4,5,6\n1,2,3\n7,8,9\n"))
+	tests := []struct {
+		name           string
+		input          string
+		expectedOutput string
+	}{
+		{"Non-Square Matrix", "1,2,3\n4,5,6\n", "error row count and col count not equal"},
+		{"Success", "4,5,6\n1,2,3\n7,8,9\n", "4,5,6,1,2,3,7,8,9"},
+	}
 
-	writer.Close()
-	req.Body = ioutil.NopCloser(body)
-	req.Header.Set("Content-Type", writer.FormDataContentType())
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, err := createTestRequest(tt.input)
+			if err != nil {
+				t.Fatalf("Failed to create mock CSV file: %v", err)
+			}
 
-	w := httptest.NewRecorder()
-	Flatten(w, req)
+			w := httptest.NewRecorder()
+			Flatten(w, req)
 
-	resp := w.Result()
-	bodyBytes, _ := ioutil.ReadAll(resp.Body)
-	bodyString := string(bodyBytes)
+			resp := w.Result()
+			bodyBytes, _ := ioutil.ReadAll(resp.Body)
+			bodyString := strings.TrimSpace(string(bodyBytes))
 
-	// Check the response
-	expected := "4,5,6,1,2,3,7,8,9"
-	if strings.TrimSpace(bodyString) != expected {
-		t.Errorf("Expected %s, got %s", expected, bodyString)
+			if bodyString != tt.expectedOutput {
+				t.Errorf("Expected '%s', got '%s'", tt.expectedOutput, bodyString)
+			}
+		})
 	}
 }
 
 func TestInvert(t *testing.T) {
-	req := httptest.NewRequest("POST", "/invert", nil)
 
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-	part, _ := writer.CreateFormFile("file", "test.csv")
-	part.Write([]byte("4,5,6\n1,2,3\n7,8,9\n"))
-
-	writer.Close()
-	req.Body = ioutil.NopCloser(body)
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-
-	w := httptest.NewRecorder()
-	Invert(w, req)
-
-	resp := w.Result()
-	bodyBytes, _ := ioutil.ReadAll(resp.Body)
-	bodyString := string(bodyBytes)
-
-	// Check the response
-	expected := "4,1,7\n5,2,8\n6,3,9\n"
-	if bodyString != expected {
-		t.Errorf("Expected:\n%s\nGot:\n%s", expected, bodyString)
+	tests := []struct {
+		name           string
+		input          string
+		expectedOutput string
+	}{
+		{"Non-Square Matrix", "1,2,3\n4,5,6\n", "error row count and col count not equal"},
+		{"Success", "1,2,3\n4,5,6\n7,8,9\n", "1,4,7\n2,5,8\n3,6,9"},
 	}
-}
 
-// Helper function to create a mock CSV file
-func createMockCSVFile(content string) (*http.Request, error) {
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("file", "test.csv")
-	if err != nil {
-		return nil, err
-	}
-	_, err = part.Write([]byte(content))
-	if err != nil {
-		return nil, err
-	}
-	writer.Close()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, err := createTestRequest(tt.input)
+			if err != nil {
+				t.Fatalf("Failed to create mock CSV file: %v", err)
+			}
 
-	req := httptest.NewRequest("POST", "/", body)
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-	return req, nil
+			w := httptest.NewRecorder()
+			Invert(w, req)
+
+			resp := w.Result()
+			bodyBytes, _ := ioutil.ReadAll(resp.Body)
+			bodyString := strings.TrimSpace(string(bodyBytes))
+
+			if bodyString != tt.expectedOutput {
+				t.Errorf("Expected '%s', got '%s'", tt.expectedOutput, bodyString)
+			}
+		})
+	}
 }
 
 func TestSum(t *testing.T) {
@@ -119,7 +118,7 @@ func TestSum(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req, err := createMockCSVFile(tt.input)
+			req, err := createTestRequest(tt.input)
 			if err != nil {
 				t.Fatalf("Failed to create mock CSV file: %v", err)
 			}
@@ -151,7 +150,7 @@ func TestMultiply(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req, err := createMockCSVFile(tt.input)
+			req, err := createTestRequest(tt.input)
 			if err != nil {
 				t.Fatalf("Failed to create mock CSV file: %v", err)
 			}
@@ -168,4 +167,23 @@ func TestMultiply(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Helper function to create a request
+func createTestRequest(content string) (*http.Request, error) {
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("file", "test.csv")
+	if err != nil {
+		return nil, err
+	}
+	_, err = part.Write([]byte(content))
+	if err != nil {
+		return nil, err
+	}
+	writer.Close()
+
+	req := httptest.NewRequest("POST", "/", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	return req, nil
 }
